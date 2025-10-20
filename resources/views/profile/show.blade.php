@@ -67,61 +67,79 @@
                     @endif
                     
                     @if($user->cfAccount)
-                        <div class="space-y-3">
-                            <p class="text-sm">
-                                <span class="font-medium text-gray-700">{{ __('Handle:') }}</span>
-                                <a href="https://codeforces.com/profile/{{ $user->cfAccount->handle }}" 
-                                   target="_blank" 
-                                   class="text-blue-600 hover:underline ml-2">
-                                    {{ $user->cfAccount->handle }}
-                                </a>
-                            </p>
-                            
-                            @if($user->cfAccount->current_rating)
-                                <p class="text-sm">
-                                    <span class="font-medium text-gray-700">{{ __('Current Rating:') }}</span>
-                                    <span class="ml-2">{{ $user->cfAccount->current_rating }}</span>
-                                </p>
-                            @endif
-                            
-                            @if($user->cfAccount->max_rating)
-                                <p class="text-sm">
-                                    <span class="font-medium text-gray-700">{{ __('Max Rating:') }}</span>
-                                    <span class="ml-2">{{ $user->cfAccount->max_rating }}</span>
-                                </p>
-                            @endif
-                            
-                            @if($user->cfAccount->country)
-                                <p class="text-sm">
-                                    <span class="font-medium text-gray-700">{{ __('Country:') }}</span>
-                                    <span class="ml-2">{{ $user->cfAccount->country }}</span>
-                                </p>
+                        <div class="flex items-start gap-6">
+                            <!-- Avatar -->
+                            @if($user->cfAccount->avatar)
+                                <div class="flex-shrink-0">
+                                    <img src="{{ $user->cfAccount->avatar }}" 
+                                         alt="{{ $user->cfAccount->handle }}" 
+                                         class="w-24 h-24 rounded-lg border-2 border-gray-200">
+                                </div>
                             @endif
 
-                            @if($user->cfAccount->city)
-                                <p class="text-sm">
-                                    <span class="font-medium text-gray-700">{{ __('City:') }}</span>
-                                    <span class="ml-2">{{ $user->cfAccount->city }}</span>
-                                </p>
-                            @endif
+                            <!-- Profile Info -->
+                            <div class="flex-1 space-y-3">
+                                <!-- Handle -->
+                                <div>
+                                    <p class="text-sm text-gray-600">{{ __('Handle') }}</p>
+                                    <a href="https://codeforces.com/profile/{{ $user->cfAccount->handle }}" 
+                                       target="_blank" 
+                                       class="text-lg font-semibold text-blue-600 hover:underline">
+                                        {{ $user->cfAccount->handle }}
+                                    </a>
+                                </div>
 
-                            @if($user->cfAccount->organization)
-                                <p class="text-sm">
-                                    <span class="font-medium text-gray-700">{{ __('Organization:') }}</span>
-                                    <span class="ml-2">{{ $user->cfAccount->organization }}</span>
-                                </p>
-                            @endif
-                            
-                            @if($user->cfAccount->last_synced_at)
-                                <p class="text-xs text-gray-500 mt-4">
-                                    {{ __('Last synced:') }} {{ $user->cfAccount->last_synced_at->diffForHumans() }}
-                                </p>
-                            @else
-                                <p class="text-xs text-gray-500 mt-4">
-                                    {{ __('Not synced yet. Click "Sync Now" to fetch data from Codeforces.') }}
-                                </p>
-                            @endif
+                                <!-- Rating -->
+                                @if($user->cfAccount->current_rating)
+                                    <div>
+                                        <p class="text-sm text-gray-600 mb-1">{{ __('Current Rating') }}</p>
+                                        <x-cf-rating-badge :rating="$user->cfAccount->current_rating" />
+                                    </div>
+                                @endif
+
+                                <!-- Max Rating -->
+                                @if($user->cfAccount->max_rating)
+                                    <div>
+                                        <p class="text-sm text-gray-600 mb-1">{{ __('Max Rating') }}</p>
+                                        <x-cf-rating-badge :rating="$user->cfAccount->max_rating" />
+                                    </div>
+                                @endif
+
+                                <!-- Location -->
+                                @if($user->cfAccount->country || $user->cfAccount->city)
+                                    <div>
+                                        <p class="text-sm text-gray-600">{{ __('Location') }}</p>
+                                        <p class="text-sm">
+                                            @if($user->cfAccount->city)
+                                                {{ $user->cfAccount->city }}@if($user->cfAccount->country),@endif
+                                            @endif
+                                            @if($user->cfAccount->country)
+                                                {{ $user->cfAccount->country }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                @endif
+
+                                <!-- Organization -->
+                                @if($user->cfAccount->organization)
+                                    <div>
+                                        <p class="text-sm text-gray-600">{{ __('Organization') }}</p>
+                                        <p class="text-sm">{{ $user->cfAccount->organization }}</p>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
+
+                        <!-- Last Sync -->
+                        @if($user->cfAccount->last_synced_at)
+                            <p class="text-xs text-gray-500 mt-6">
+                                {{ __('Last synced:') }} {{ $user->cfAccount->last_synced_at->diffForHumans() }}
+                            </p>
+                        @else
+                            <p class="text-xs text-gray-500 mt-6">
+                                {{ __('Not synced yet. Click "Sync Now" to fetch data from Codeforces.') }}
+                            </p>
+                        @endif
                     @else
                         <p class="text-sm text-gray-600 mb-4">
                             {{ __('No Codeforces account linked yet.') }}
