@@ -58,7 +58,8 @@ class StatsController extends Controller
     {
         try {
             $cfApi = app(CodeforcesApiService::class);
-            $submissions = $cfApi->getUserStatus($handle);
+            // Fetch more submissions to get complete statistics (10000 is effectively unlimited)
+            $submissions = $cfApi->getUserStatus($handle, 10000);
 
             if (empty($submissions)) {
                 return $this->getEmptyProblemStats();
