@@ -3,7 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\ContestsController;
-use App\Http\Controllers\ProblemController;
+use App\Http\Controllers\ProblemsController;
 use App\Services\CodeforcesApiService;
 use Illuminate\Support\Facades\Route;
 
@@ -42,7 +42,8 @@ Route::middleware('auth')->group(function () {
     
     Route::get('/stats', [StatsController::class, 'index'])->name('stats.index');
     Route::get('/contests', [ContestsController::class, 'index'])->name('contests.index');
-    Route::get('/problems', [ProblemController::class, 'index'])->name('problems.index');
+    Route::get('/problems', [ProblemsController::class, 'index'])->name('problems.index');
+    Route::get('/problems/random', [ProblemsController::class, 'random'])->name('problems.random');
 });
 
 require __DIR__.'/auth.php';
