@@ -44,10 +44,10 @@
                     </div>
 
                     <!-- Status Messages -->
-                    @if (session('status') === 'cf-account-linked')
+                    @if (session('status') === 'cf-account-synced')
                         <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
                             <p class="text-sm text-green-800">
-                                {{ __('Codeforces account linked successfully! Syncing data in background...') }}
+                                {{ __('Codeforces account synced successfully! Your profile has been updated.') }}
                             </p>
                         </div>
                     @endif

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LinkCfAccountRequest;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Jobs\SyncCfAccount;
+use App\Services\CodeforcesApiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -76,16 +77,33 @@ class ProfileController extends Controller
     public function linkCf(LinkCfAccountRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $newHandle = $request->validated('handle');
         
+        $cfAccount = $user->cfAccount;
+        $isUpdatingHandle = $cfAccount && $cfAccount->handle !== $newHandle;
+        
+        // If updating to a different handle, clear old data
+        if ($isUpdatingHandle) {
+            $oldHandle = $cfAccount->handle;
+            
+            // Clear old rating snapshots
+            $cfAccount->ratingSnapshots()->delete();
+            
+            // Clear cached API data for old handle
+            $cfApi = app(CodeforcesApiService::class);
+            $cfApi->clearCacheForHandle($oldHandle);
+        }
+        
+        // Update or create CF account
         $cfAccount = $user->cfAccount()->updateOrCreate(
             ['user_id' => $user->id],
-            ['handle' => $request->validated('handle')]
+            ['handle' => $newHandle]
         );
 
-        // Dispatch sync job to fetch data from Codeforces API
-        SyncCfAccount::dispatch($cfAccount);
+        // Dispatch sync job synchronously to fetch data immediately
+        SyncCfAccount::dispatchSync($cfAccount);
 
-        return Redirect::route('profile.show')->with('status', 'cf-account-linked');
+        return Redirect::route('profile.show')->with('status', 'cf-account-synced');
     }
 
     /**
