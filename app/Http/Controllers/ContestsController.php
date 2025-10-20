@@ -32,15 +32,15 @@ class ContestsController extends Controller
         };
 
         // Get user's participated contests if logged in
-        $participatedContestIds = [];
+        $participatedContestsData = [];
         if ($user = $request->user()) {
-            $participatedContestIds = $this->getUserParticipatedContests($user);
+            $participatedContestsData = $this->getUserParticipatedContests($user);
         }
 
         return view('contests.index', [
             'contests' => $contests,
             'filter' => $filter,
-            'participatedContestIds' => $participatedContestIds,
+            'participatedContestsData' => $participatedContestsData,
         ]);
     }
 
@@ -111,7 +111,7 @@ class ContestsController extends Controller
     }
 
     /**
-     * Get contest IDs that user has participated in.
+     * Get contest data for contests that user has participated in.
      */
     protected function getUserParticipatedContests($user): array
     {
@@ -121,9 +121,58 @@ class ContestsController extends Controller
             return [];
         }
 
-        // Get all contest IDs from user's rating snapshots
-        return $cfAccount->ratingSnapshots()
-            ->pluck('contest_id')
-            ->toArray();
+        try {
+            // Get all rating snapshots for the user
+            $snapshots = $cfAccount->ratingSnapshots()
+                ->get()
+                ->keyBy('contest_id');
+
+            // Get user submissions to calculate solve count per contest
+            $cfApi = app(CodeforcesApiService::class);
+            $submissions = $cfApi->getUserStatus($cfAccount->handle, 1000);
+
+            $contestSolveCount = [];
+            
+            if (!empty($submissions)) {
+                foreach ($submissions as $submission) {
+                    $verdict = $submission['verdict'] ?? null;
+                    $contestId = $submission['problem']['contestId'] ?? null;
+                    $problemIndex = $submission['problem']['index'] ?? null;
+
+                    // Only count accepted solutions
+                    if ($verdict === 'OK' && $contestId && $problemIndex) {
+                        $key = $contestId . '_' . $problemIndex;
+                        
+                        if (!isset($contestSolveCount[$contestId])) {
+                            $contestSolveCount[$contestId] = [];
+                        }
+                        
+                        // Track unique solved problems per contest
+                        $contestSolveCount[$contestId][$key] = true;
+                    }
+                }
+            }
+
+            // Build the participated contests data
+            $participatedData = [];
+            foreach ($snapshots as $contestId => $snapshot) {
+                $participatedData[$contestId] = [
+                    'rating_change' => $snapshot->rating_change,
+                    'old_rating' => $snapshot->old_rating,
+                    'new_rating' => $snapshot->new_rating,
+                    'rank' => $snapshot->rank,
+                    'solve_count' => isset($contestSolveCount[$contestId]) ? count($contestSolveCount[$contestId]) : 0,
+                ];
+            }
+
+            return $participatedData;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get user participated contests', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+            ]);
+            return [];
+        }
     }
 }

@@ -58,12 +58,17 @@ class StatsController extends Controller
     {
         try {
             $cfApi = app(CodeforcesApiService::class);
-            // Fetch more submissions to get complete statistics (10000 is effectively unlimited)
-            $submissions = $cfApi->getUserStatus($handle, 10000);
+            
+            // Fetch submissions (500 is a good balance - fast but shows recent patterns)
+            $submissions = $cfApi->getUserStatus($handle, 500);
 
             if (empty($submissions)) {
+                Log::warning('No submissions found', ['handle' => $handle]);
                 return $this->getEmptyProblemStats();
             }
+
+            // Calculate timestamp for 1 month ago
+            $oneMonthAgo = now()->subMonth()->timestamp;
 
             $solvedProblems = [];
             $attemptedProblems = [];
@@ -72,6 +77,12 @@ class StatsController extends Controller
             $tagCounts = [];
 
             foreach ($submissions as $submission) {
+                // Skip submissions older than 1 month
+                $submissionTime = $submission['creationTimeSeconds'] ?? 0;
+                if ($submissionTime < $oneMonthAgo) {
+                    continue;
+                }
+
                 // Count by verdict
                 $verdict = $submission['verdict'] ?? 'UNKNOWN';
                 $verdictCounts[$verdict] = ($verdictCounts[$verdict] ?? 0) + 1;
@@ -88,7 +99,7 @@ class StatsController extends Controller
                     if ($verdict === 'OK') {
                         $solvedProblems[$problemKey] = true;
 
-                        // Count problem tags
+                        // Count problem tags (only for solved problems)
                         if (isset($submission['problem']['tags'])) {
                             foreach ($submission['problem']['tags'] as $tag) {
                                 $tagCounts[$tag] = ($tagCounts[$tag] ?? 0) + 1;
@@ -98,17 +109,21 @@ class StatsController extends Controller
                 }
             }
 
-            // Sort tag counts by value
+            // Sort tag counts
             arsort($tagCounts);
 
-            return [
-                'total_submissions' => count($submissions),
+            $stats = [
+                'total_submissions' => $verdictCounts ? array_sum($verdictCounts) : 0,
                 'solved_count' => count($solvedProblems),
                 'attempted_count' => count($attemptedProblems),
                 'verdict_counts' => $verdictCounts,
                 'language_counts' => $languageCounts,
-                'tag_counts' => array_slice($tagCounts, 0, 10), // Top 10 tags
+                'tag_counts' => $tagCounts,
             ];
+
+            Log::info('Calculated problem stats (past month)', $stats);
+
+            return $stats;
 
         } catch (\Exception $e) {
             Log::error('Failed to fetch problem stats', [

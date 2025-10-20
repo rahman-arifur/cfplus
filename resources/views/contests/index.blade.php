@@ -52,9 +52,30 @@
                                         @endif
                                         
                                         <!-- Participated Badge -->
-                                        @if(in_array($contest->contest_id, $participatedContestIds))
+                                        @if(isset($participatedContestsData[$contest->contest_id]))
+                                            @php
+                                                $contestData = $participatedContestsData[$contest->contest_id];
+                                                $ratingChange = $contestData['rating_change'];
+                                                $solveCount = $contestData['solve_count'];
+                                            @endphp
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                                 ✓ Participated
+                                            </span>
+                                            @if($ratingChange > 0)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    +{{ $ratingChange }}
+                                                </span>
+                                            @elseif($ratingChange < 0)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                    {{ $ratingChange }}
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                    {{ $ratingChange }}
+                                                </span>
+                                            @endif
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                {{ $solveCount }} solved
                                             </span>
                                         @endif
                                     </div>
