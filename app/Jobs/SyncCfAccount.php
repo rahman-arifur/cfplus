@@ -76,6 +76,9 @@ class SyncCfAccount implements ShouldQueue
             // Store rating history in rating_snapshots
             $this->syncRatingHistory($ratingHistory);
 
+            // Sync problem status (solved/attempted)
+            $this->syncProblemStatus($cfApi, $handle);
+
             Log::info("Successfully synced Codeforces account", [
                 'handle' => $handle,
                 'current_rating' => $this->cfAccount->current_rating,
@@ -162,6 +165,107 @@ class SyncCfAccount implements ShouldQueue
         }
 
         return $maxRating > 0 ? $maxRating : null;
+    }
+
+    /**
+     * Sync user's problem status (solved/attempted) based on submissions.
+     *
+     * @param CodeforcesApiService $cfApi
+     * @param string $handle
+     * @return void
+     */
+    protected function syncProblemStatus(CodeforcesApiService $cfApi, string $handle): void
+    {
+        try {
+            // Fetch user's submissions (we'll get all to be comprehensive)
+            $submissions = $cfApi->getUserStatus($handle);
+
+            if (empty($submissions)) {
+                Log::info("No submissions found for handle: {$handle}");
+                return;
+            }
+
+            $problemStats = [];
+
+            // Process submissions to determine problem status
+            foreach ($submissions as $submission) {
+                $problem = $submission['problem'] ?? null;
+                if (!$problem) continue;
+
+                $contestId = $problem['contestId'] ?? null;
+                $index = $problem['index'] ?? null;
+                if (!$contestId || !$index) continue;
+
+                $code = $contestId . $index;
+                $verdict = $submission['verdict'] ?? null;
+                $creationTime = $submission['creationTimeSeconds'] ?? null;
+
+                // Initialize problem stats if not exists
+                if (!isset($problemStats[$code])) {
+                    $problemStats[$code] = [
+                        'code' => $code,
+                        'status' => 'attempted',
+                        'solved_at' => null,
+                        'attempts' => 0,
+                    ];
+                }
+
+                $problemStats[$code]['attempts']++;
+
+                // If this submission was OK, mark as solved
+                if ($verdict === 'OK') {
+                    $problemStats[$code]['status'] = 'solved';
+                    
+                    // Track the first time it was solved
+                    $solvedAt = $problemStats[$code]['solved_at'];
+                    if (!$solvedAt || ($creationTime && $creationTime < strtotime($solvedAt))) {
+                        $problemStats[$code]['solved_at'] = $creationTime 
+                            ? date('Y-m-d H:i:s', $creationTime)
+                            : now()->toDateTimeString();
+                    }
+                }
+            }
+
+            // Sync to database
+            $user = $this->cfAccount->user;
+            $syncedCount = 0;
+
+            foreach ($problemStats as $code => $stats) {
+                // Find the problem in our database
+                $problem = \App\Models\Problem::where('code', $code)->first();
+                
+                if (!$problem) {
+                    // Problem not in our database yet, skip it
+                    continue;
+                }
+
+                // Update or create the pivot record
+                $user->problems()->syncWithoutDetaching([
+                    $problem->id => [
+                        'status' => $stats['status'],
+                        'solved_at' => $stats['solved_at'],
+                        'attempts' => $stats['attempts'],
+                        'updated_at' => now(),
+                    ]
+                ]);
+
+                $syncedCount++;
+            }
+
+            Log::info("Synced problem status", [
+                'handle' => $handle,
+                'total_submissions' => count($submissions),
+                'unique_problems' => count($problemStats),
+                'synced_to_db' => $syncedCount,
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("Failed to sync problem status", [
+                'handle' => $handle,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't throw - let the rating sync complete even if problem sync fails
+        }
     }
 
     /**

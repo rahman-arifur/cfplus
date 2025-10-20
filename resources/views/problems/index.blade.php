@@ -11,6 +11,49 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6">
                     <form method="GET" action="{{ route('problems.index') }}" class="space-y-4">
+                        <!-- User Stats (if logged in) -->
+                        @if($userStats)
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <div class="flex items-center justify-between flex-wrap gap-4">
+                                    <div class="flex items-center gap-6">
+                                        <div class="text-center">
+                                            <div class="text-2xl font-bold text-green-600">{{ $userStats['solved_count'] }}</div>
+                                            <div class="text-xs text-gray-600">Solved</div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-2xl font-bold text-yellow-600">{{ $userStats['attempted_count'] }}</div>
+                                            <div class="text-xs text-gray-600">Attempted</div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-2xl font-bold text-gray-600">{{ $userStats['total_count'] - $userStats['solved_count'] - $userStats['attempted_count'] }}</div>
+                                            <div class="text-xs text-gray-600">Unsolved</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Status Filter Buttons -->
+                                    <div class="flex gap-2">
+                                        <button type="button" onclick="setStatusFilter('')" 
+                                            class="px-3 py-1.5 text-xs rounded {{ empty($filters['status_filter']) ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                            All
+                                        </button>
+                                        <button type="button" onclick="setStatusFilter('unsolved')" 
+                                            class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'unsolved' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                            Unsolved Only
+                                        </button>
+                                        <button type="button" onclick="setStatusFilter('attempted')" 
+                                            class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'attempted' ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                            Attempted
+                                        </button>
+                                        <button type="button" onclick="setStatusFilter('solved')" 
+                                            class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'solved' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                            Solved
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="status_filter" id="status_filter" value="{{ $filters['status_filter'] ?? '' }}">
+                        @endif
+
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <!-- Search -->
                             <div>
@@ -107,6 +150,9 @@
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
+                                        @if($userStats)
+                                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        @endif
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Problem Name</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
@@ -117,7 +163,20 @@
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($problems as $problem)
-                                        <tr class="hover:bg-gray-50">
+                                        <tr class="hover:bg-gray-50 {{ isset($problem->user_status) && $problem->user_status === 'solved' ? 'bg-green-50' : '' }}">
+                                            @if($userStats)
+                                                <td class="px-3 py-4 whitespace-nowrap text-center">
+                                                    @if(isset($problem->user_status))
+                                                        @if($problem->user_status === 'solved')
+                                                            <span class="text-green-600 text-xl font-bold" title="Solved">✓</span>
+                                                        @elseif($problem->user_status === 'attempted')
+                                                            <span class="text-yellow-600 text-xl" title="Attempted">○</span>
+                                                        @endif
+                                                    @else
+                                                        <span class="text-gray-300 text-xl">○</span>
+                                                    @endif
+                                                </td>
+                                            @endif
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                 {{ $problem->code }}
                                             </td>
@@ -179,6 +238,14 @@
             const formData = new FormData(form);
             const params = new URLSearchParams(formData).toString();
             window.location.href = "{{ route('problems.random') }}?" + params;
+        }
+
+        function setStatusFilter(status) {
+            const input = document.getElementById('status_filter');
+            if (input) {
+                input.value = status;
+                document.querySelector('form').submit();
+            }
         }
     </script>
 </x-app-layout>

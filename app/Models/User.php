@@ -55,4 +55,57 @@ class User extends Authenticatable
     {
         return $this->hasOne(CfAccount::class);
     }
+
+    /**
+     * Problems attempted or solved by this user.
+     */
+    public function problems()
+    {
+        return $this->belongsToMany(Problem::class, 'user_problem')
+            ->withPivot(['status', 'solved_at', 'attempts'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get problems solved by this user.
+     */
+    public function solvedProblems()
+    {
+        return $this->belongsToMany(Problem::class, 'user_problem')
+            ->wherePivot('status', 'solved')
+            ->withPivot(['status', 'solved_at', 'attempts'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get problems attempted but not solved by this user.
+     */
+    public function attemptedProblems()
+    {
+        return $this->belongsToMany(Problem::class, 'user_problem')
+            ->wherePivot('status', 'attempted')
+            ->withPivot(['status', 'solved_at', 'attempts'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if user has solved a problem.
+     */
+    public function hasSolved($problemId): bool
+    {
+        return $this->problems()
+            ->wherePivot('problem_id', $problemId)
+            ->wherePivot('status', 'solved')
+            ->exists();
+    }
+
+    /**
+     * Check if user has attempted a problem.
+     */
+    public function hasAttempted($problemId): bool
+    {
+        return $this->problems()
+            ->wherePivot('problem_id', $problemId)
+            ->exists();
+    }
 }

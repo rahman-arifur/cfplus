@@ -79,4 +79,39 @@ class Problem extends Model
         }
         return $query;
     }
+
+    /**
+     * Users who have attempted or solved this problem.
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_problem')
+            ->withPivot(['status', 'solved_at', 'attempts'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if a user has solved this problem.
+     */
+    public function isSolvedBy(?User $user): bool
+    {
+        if (!$user) return false;
+        
+        return $this->users()
+            ->wherePivot('user_id', $user->id)
+            ->wherePivot('status', 'solved')
+            ->exists();
+    }
+
+    /**
+     * Check if a user has attempted this problem.
+     */
+    public function isAttemptedBy(?User $user): bool
+    {
+        if (!$user) return false;
+        
+        return $this->users()
+            ->wherePivot('user_id', $user->id)
+            ->exists();
+    }
 }
