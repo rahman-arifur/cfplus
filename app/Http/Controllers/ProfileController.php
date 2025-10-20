@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LinkCfAccountRequest;
 use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -66,5 +67,20 @@ class ProfileController extends Controller
         return view('profile.show', [
             'user' => $request->user(),
         ]);
+    }
+
+    /**
+     * Link or update the user's Codeforces account.
+     */
+    public function linkCf(LinkCfAccountRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        
+        $user->cfAccount()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['handle' => $request->validated('handle')]
+        );
+
+        return Redirect::route('profile.show')->with('status', 'cf-account-linked');
     }
 }
