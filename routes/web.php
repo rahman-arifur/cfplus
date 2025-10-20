@@ -4,11 +4,29 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\ContestController;
 use App\Http\Controllers\ProblemController;
+use App\Services\CodeforcesApiService;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Temporary test route for Codeforces API
+Route::get('/test-cf-api', function (CodeforcesApiService $cfApi) {
+    $handle = 'tourist'; // Test with a known CF handle
+    
+    $userInfo = $cfApi->getUserInfo($handle);
+    $rating = $cfApi->getUserRating($handle);
+    $status = $cfApi->getUserStatus($handle, 10);
+    
+    return response()->json([
+        'handle' => $handle,
+        'user_info' => $userInfo,
+        'rating_count' => count($rating),
+        'submissions_count' => count($status),
+        'latest_rating' => !empty($rating) ? end($rating) : null,
+    ]);
+})->name('test.cf.api');
 
 Route::get('/dashboard', function () {
     return view('dashboard');

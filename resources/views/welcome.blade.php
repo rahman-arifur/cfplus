@@ -8,7 +8,7 @@
 </head>
 <body class="antialiased bg-white text-slate-800">
     <div class="min-h-screen flex flex-col">
-        <nav class="bg-white border-b">
+        <nav class="bg-white border-b"> 
             <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                 <a href="{{ url('/') }}" class="text-xl font-semibold">{{ config('app.name', 'cfplus') }}</a>
                 <div class="space-x-3">

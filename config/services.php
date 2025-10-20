@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'codeforces' => [
+        'api_base' => env('CODEFORCES_API_BASE', 'https://codeforces.com/api'),
+        'cache_ttl' => env('CODEFORCES_CACHE_TTL', 600), // 10 minutes default
+        'rate_limit_delay' => env('CODEFORCES_RATE_LIMIT_DELAY', 2), // seconds between requests
+        'timeout' => env('CODEFORCES_TIMEOUT', 10), // HTTP timeout in seconds
+    ],
+
 ];
