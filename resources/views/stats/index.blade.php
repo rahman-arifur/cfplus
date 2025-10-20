@@ -74,6 +74,42 @@
                 </div>
             </div>
 
+            <!-- Problem Tags -->
+            @if(!empty($problemStats['tag_counts']))
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Problem Tags (Solved Problems)</h3>
+                    <div class="space-y-3">
+                        @php
+                            $sortedTags = $problemStats['tag_counts'];
+                            arsort($sortedTags);
+                            $topTags = array_slice($sortedTags, 0, 10, true);
+                            $maxTagCount = !empty($topTags) ? max($topTags) : 1;
+                        @endphp
+                        @foreach($topTags as $tag => $count)
+                            @php
+                                $percentage = $maxTagCount > 0 ? ($count / $maxTagCount) * 100 : 0;
+                            @endphp
+                            <div class="flex items-center gap-3">
+                                <div class="w-40 flex-shrink-0">
+                                    <span class="text-sm font-medium text-gray-700 capitalize">{{ $tag }}</span>
+                                </div>
+                                <div class="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
+                                    <div class="h-full rounded-full transition-all duration-300" 
+                                         style="width: {{ $percentage }}%; background-color: #6366f1;">
+                                    </div>
+                                </div>
+                                <div class="w-24 text-right flex-shrink-0">
+                                    <span class="text-sm font-semibold text-gray-900">{{ number_format($count) }}</span>
+                                    <span class="text-xs text-gray-500 ml-1">({{ number_format(($count / ($problemStats['solved_count'] ?: 1)) * 100, 1) }}%)</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Programming Languages -->
             @if(!empty($problemStats['language_counts']))
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -164,42 +200,6 @@
                                 </div>
                             @endforeach
                         </div>
-                    </div>
-                </div>
-            </div>
-            @endif
-
-            <!-- Problem Tags -->
-            @if(!empty($problemStats['tag_counts']))
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Problem Tags (Solved Problems)</h3>
-                    <div class="space-y-3">
-                        @php
-                            $sortedTags = $problemStats['tag_counts'];
-                            arsort($sortedTags);
-                            $topTags = array_slice($sortedTags, 0, 10, true);
-                            $maxTagCount = !empty($topTags) ? max($topTags) : 1;
-                        @endphp
-                        @foreach($topTags as $tag => $count)
-                            @php
-                                $percentage = $maxTagCount > 0 ? ($count / $maxTagCount) * 100 : 0;
-                            @endphp
-                            <div class="flex items-center gap-3">
-                                <div class="w-40 flex-shrink-0">
-                                    <span class="text-sm font-medium text-gray-700 capitalize">{{ $tag }}</span>
-                                </div>
-                                <div class="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-                                    <div class="h-full rounded-full transition-all duration-300" 
-                                         style="width: {{ $percentage }}%; background-color: #6366f1;">
-                                    </div>
-                                </div>
-                                <div class="w-24 text-right flex-shrink-0">
-                                    <span class="text-sm font-semibold text-gray-900">{{ number_format($count) }}</span>
-                                    <span class="text-xs text-gray-500 ml-1">({{ number_format(($count / ($problemStats['solved_count'] ?: 1)) * 100, 1) }}%)</span>
-                                </div>
-                            </div>
-                        @endforeach
                     </div>
                 </div>
             </div>
