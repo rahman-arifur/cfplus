@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\CfAccount;
+use App\Models\RatingSnapshot;
 use App\Services\CodeforcesApiService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -72,10 +73,14 @@ class SyncCfAccount implements ShouldQueue
                 'last_synced_at' => now(),
             ]);
 
+            // Store rating history in rating_snapshots
+            $this->syncRatingHistory($ratingHistory);
+
             Log::info("Successfully synced Codeforces account", [
                 'handle' => $handle,
                 'current_rating' => $this->cfAccount->current_rating,
                 'max_rating' => $this->cfAccount->max_rating,
+                'rating_snapshots_count' => count($ratingHistory),
             ]);
 
         } catch (Exception $e) {
@@ -97,6 +102,44 @@ class SyncCfAccount implements ShouldQueue
 
             throw $e; // Re-throw to trigger retry
         }
+    }
+
+    /**
+     * Sync rating history to rating_snapshots table.
+     *
+     * @param array $ratingHistory
+     * @return void
+     */
+    protected function syncRatingHistory(array $ratingHistory): void
+    {
+        if (empty($ratingHistory)) {
+            Log::info("No rating history to sync for handle: {$this->cfAccount->handle}");
+            return;
+        }
+
+        foreach ($ratingHistory as $contest) {
+            // Use updateOrCreate to avoid duplicates
+            RatingSnapshot::updateOrCreate(
+                [
+                    'cf_account_id' => $this->cfAccount->id,
+                    'contest_id' => $contest['contestId'],
+                ],
+                [
+                    'contest_name' => $contest['contestName'] ?? 'Unknown Contest',
+                    'rank' => $contest['rank'] ?? null,
+                    'old_rating' => $contest['oldRating'],
+                    'new_rating' => $contest['newRating'],
+                    'rated_at' => isset($contest['ratingUpdateTimeSeconds']) 
+                        ? date('Y-m-d H:i:s', $contest['ratingUpdateTimeSeconds'])
+                        : now(),
+                ]
+            );
+        }
+
+        Log::info("Synced rating history", [
+            'handle' => $this->cfAccount->handle,
+            'contests' => count($ratingHistory),
+        ]);
     }
 
     /**
