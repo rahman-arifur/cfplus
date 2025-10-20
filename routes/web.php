@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatsController;
-use App\Http\Controllers\ContestController;
+use App\Http\Controllers\ContestsController;
 use App\Http\Controllers\ProblemController;
 use App\Services\CodeforcesApiService;
 use Illuminate\Support\Facades\Route;
@@ -41,7 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/sync-cf', [ProfileController::class, 'syncCf'])->name('profile.sync-cf');
     
     Route::get('/stats', [StatsController::class, 'index'])->name('stats.index');
-    Route::get('/contests', [ContestController::class, 'index'])->name('contests.index');
+    Route::get('/contests', [ContestsController::class, 'index'])->name('contests.index');
     Route::get('/problems', [ProblemController::class, 'index'])->name('problems.index');
 });
 
