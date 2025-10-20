@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LinkCfAccountRequest;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\SyncCfAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -76,11 +77,33 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         
-        $user->cfAccount()->updateOrCreate(
+        $cfAccount = $user->cfAccount()->updateOrCreate(
             ['user_id' => $user->id],
             ['handle' => $request->validated('handle')]
         );
 
+        // Dispatch sync job to fetch data from Codeforces API
+        SyncCfAccount::dispatch($cfAccount);
+
         return Redirect::route('profile.show')->with('status', 'cf-account-linked');
+    }
+
+    /**
+     * Manually sync Codeforces account data.
+     */
+    public function syncCf(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (!$user->cfAccount) {
+            return Redirect::route('profile.show')
+                ->with('error', 'No Codeforces account linked. Please link your account first.');
+        }
+
+        // Dispatch sync job
+        SyncCfAccount::dispatch($user->cfAccount);
+
+        return Redirect::route('profile.show')
+            ->with('status', 'cf-sync-queued');
     }
 }
