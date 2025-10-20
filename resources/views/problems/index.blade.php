@@ -7,52 +7,97 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <!-- Sync Form (outside filter form) -->
+            @if($userStats)
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex items-center gap-6">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">{{ $userStats['solved_count'] }}</div>
+                                <div class="text-xs text-gray-600">Solved</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-600">{{ $userStats['attempted_count'] }}</div>
+                                <div class="text-xs text-gray-600">Attempted</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-gray-600">{{ $userStats['total_count'] - $userStats['solved_count'] - $userStats['attempted_count'] }}</div>
+                                <div class="text-xs text-gray-600">Unsolved</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col gap-2">
+                            <!-- Sync Button -->
+                            <form method="POST" action="{{ route('profile.sync-cf') }}" class="inline" id="sync-form">
+                                @csrf
+                                <input type="hidden" name="sync_now" value="1">
+                                <button type="submit" id="sync-btn"
+                                    class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg id="sync-icon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <span id="sync-text">Sync Now</span>
+                                </button>
+                            </form>
+                            
+                            <!-- Status Filter Buttons -->
+                            <div class="flex gap-2">
+                                <button type="button" onclick="setStatusFilter('')" 
+                                    class="px-3 py-1.5 text-xs rounded {{ empty($filters['status_filter']) ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                    All
+                                </button>
+                                <button type="button" onclick="setStatusFilter('unsolved')" 
+                                    class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'unsolved' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                    Unsolved Only
+                                </button>
+                                <button type="button" onclick="setStatusFilter('attempted')" 
+                                    class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'attempted' ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                    Attempted
+                                </button>
+                                <button type="button" onclick="setStatusFilter('solved')" 
+                                    class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'solved' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                    Solved
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- Filters -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6">
-                    <form method="GET" action="{{ route('problems.index') }}" class="space-y-4">
-                        <!-- User Stats (if logged in) -->
-                        @if($userStats)
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                <div class="flex items-center justify-between flex-wrap gap-4">
-                                    <div class="flex items-center gap-6">
-                                        <div class="text-center">
-                                            <div class="text-2xl font-bold text-green-600">{{ $userStats['solved_count'] }}</div>
-                                            <div class="text-xs text-gray-600">Solved</div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-2xl font-bold text-yellow-600">{{ $userStats['attempted_count'] }}</div>
-                                            <div class="text-xs text-gray-600">Attempted</div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-2xl font-bold text-gray-600">{{ $userStats['total_count'] - $userStats['solved_count'] - $userStats['attempted_count'] }}</div>
-                                            <div class="text-xs text-gray-600">Unsolved</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Status Filter Buttons -->
-                                    <div class="flex gap-2">
-                                        <button type="button" onclick="setStatusFilter('')" 
-                                            class="px-3 py-1.5 text-xs rounded {{ empty($filters['status_filter']) ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
-                                            All
-                                        </button>
-                                        <button type="button" onclick="setStatusFilter('unsolved')" 
-                                            class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'unsolved' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
-                                            Unsolved Only
-                                        </button>
-                                        <button type="button" onclick="setStatusFilter('attempted')" 
-                                            class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'attempted' ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
-                                            Attempted
-                                        </button>
-                                        <button type="button" onclick="setStatusFilter('solved')" 
-                                            class="px-3 py-1.5 text-xs rounded {{ ($filters['status_filter'] ?? '') == 'solved' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
-                                            Solved
-                                        </button>
-                                    </div>
+                    <h3 class="text-lg font-semibold mb-4">Filter Problems</h3>
+                    <form id="filter-form" method="GET" action="{{ route('problems.index') }}" class="space-y-4">
+                        <!-- Success/Error Messages -->
+                        @if(session('message'))
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4" id="success-message">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-green-600">✓</span>
+                                    <p class="text-sm text-green-800">{{ session('message') }}</p>
                                 </div>
                             </div>
-                            <input type="hidden" name="status_filter" id="status_filter" value="{{ $filters['status_filter'] ?? '' }}">
+                            @if(session('status') === 'cf-synced')
+                                <script>
+                                    // Auto-refresh after 1 second to show updated stats
+                                    setTimeout(function() {
+                                        window.location.href = window.location.pathname + window.location.search;
+                                    }, 1000);
+                                </script>
+                            @endif
                         @endif
+
+                        @if(session('error'))
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-red-600">✗</span>
+                                    <p class="text-sm text-red-800">{{ session('error') }}</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Hidden input for status filter -->
+                        <input type="hidden" name="status_filter" id="status_filter" value="{{ $filters['status_filter'] ?? '' }}">
 
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <!-- Search -->
@@ -116,14 +161,14 @@
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="flex gap-2">
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                Apply Filters
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <button type="submit" class="inline-flex items-center px-6 py-3 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-lg">
+                                🔍 Apply Filters
                             </button>
                             <a href="{{ route('problems.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                 Clear Filters
                             </a>
-                            <button type="button" onclick="randomProblem()" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            <button type="button" onclick="randomProblem()" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                 🎲 Random Problem
                             </button>
                         </div>
@@ -234,18 +279,15 @@
 
     <script>
         function randomProblem() {
-            const form = document.querySelector('form');
-            const formData = new FormData(form);
+            const filterForm = document.getElementById('filter-form');
+            const formData = new FormData(filterForm);
             const params = new URLSearchParams(formData).toString();
             window.location.href = "{{ route('problems.random') }}?" + params;
         }
 
         function setStatusFilter(status) {
-            const input = document.getElementById('status_filter');
-            if (input) {
-                input.value = status;
-                document.querySelector('form').submit();
-            }
+            document.getElementById('status_filter').value = status;
+            document.getElementById('filter-form').submit();
         }
     </script>
 </x-app-layout>

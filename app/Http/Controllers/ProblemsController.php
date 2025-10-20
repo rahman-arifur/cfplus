@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Problem;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Log;
 
 class ProblemsController extends Controller
 {
@@ -13,6 +14,8 @@ class ProblemsController extends Controller
      */
     public function index(Request $request): View
     {
+
+        
         $user = $request->user();
         $query = Problem::query();
 

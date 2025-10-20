@@ -114,14 +114,41 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if (!$user->cfAccount) {
-            return Redirect::route('profile.show')
+            return back()
                 ->with('error', 'No Codeforces account linked. Please link your account first.');
         }
 
-        // Dispatch sync job
+        // Check if we should sync immediately (for better UX on problems page)
+        $syncNow = $request->get('sync_now', false);
+        
+        if ($syncNow) {
+            try {
+                // Dispatch synchronously for immediate feedback
+                SyncCfAccount::dispatchSync($user->cfAccount);
+                
+                // Reload the user's relationships to get fresh data
+                $user->load('cfAccount');
+                
+                // Count updated problems
+                $solvedCount = $user->solvedProblems()->count();
+                $attemptedCount = $user->attemptedProblems()->count();
+                
+                return back()
+                    ->with('status', 'cf-synced')
+                    ->with('message', "✓ Sync completed! You have {$solvedCount} solved and {$attemptedCount} attempted problems.");
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Sync failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                return back()
+                    ->with('error', 'Sync failed: ' . $e->getMessage());
+            }
+        }
+
+        // Dispatch async job
         SyncCfAccount::dispatch($user->cfAccount);
 
-        return Redirect::route('profile.show')
-            ->with('status', 'cf-sync-queued');
+        // Redirect back to where they came from, or default to profile
+        return back()
+            ->with('status', 'cf-sync-queued')
+            ->with('message', 'Sync started! Your problem status will be updated shortly.');
     }
 }
