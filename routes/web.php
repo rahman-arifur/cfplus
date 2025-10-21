@@ -5,6 +5,7 @@ use App\Http\Controllers\StatsController;
 use App\Http\Controllers\ContestsController;
 use App\Http\Controllers\UserContestsController;
 use App\Http\Controllers\ProblemsController;
+use App\Http\Controllers\DashboardController;
 use App\Services\CodeforcesApiService;
 use Illuminate\Support\Facades\Route;
 
@@ -29,9 +30,9 @@ Route::get('/test-cf-api', function (CodeforcesApiService $cfApi) {
     ]);
 })->name('test.cf.api');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');

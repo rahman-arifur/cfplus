@@ -110,11 +110,14 @@
             </div>
             @endif
 
-            <!-- Programming Languages -->
-            @if(!empty($problemStats['language_counts']))
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Programming Languages</h3>
+            <!-- Programming Languages & Submission Verdicts Side by Side -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Programming Languages -->
+                @if(!empty($problemStats['language_counts']))
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Programming Languages</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Chart -->
                         <div class="h-56 flex items-center justify-center">
@@ -202,8 +205,10 @@
                         </div>
                     </div>
                 </div>
+                @endif
+                
             </div>
-            @endif
+            <!-- End Programming Languages & Submission Verdicts Grid -->
 
         </div>
     </div>
