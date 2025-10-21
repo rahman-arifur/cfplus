@@ -108,4 +108,12 @@ class User extends Authenticatable
             ->wherePivot('problem_id', $problemId)
             ->exists();
     }
+
+    /**
+     * User's custom contests.
+     */
+    public function userContests()
+    {
+        return $this->hasMany(UserContest::class);
+    }
 }

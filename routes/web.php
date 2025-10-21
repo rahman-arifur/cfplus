@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\ContestsController;
+use App\Http\Controllers\UserContestsController;
 use App\Http\Controllers\ProblemsController;
 use App\Services\CodeforcesApiService;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/contests', [ContestsController::class, 'index'])->name('contests.index');
     Route::get('/problems', [ProblemsController::class, 'index'])->name('problems.index');
     Route::get('/problems/random', [ProblemsController::class, 'random'])->name('problems.random');
+    
+    // User Custom Contests
+    Route::prefix('custom-contests')->name('user-contests.')->group(function () {
+        Route::get('/', [UserContestsController::class, 'index'])->name('index');
+        Route::get('/create', [UserContestsController::class, 'create'])->name('create');
+        Route::post('/', [UserContestsController::class, 'store'])->name('store');
+        Route::get('/{userContest}', [UserContestsController::class, 'show'])->name('show');
+        Route::post('/{userContest}/start', [UserContestsController::class, 'start'])->name('start');
+        Route::get('/{userContest}/participate', [UserContestsController::class, 'participate'])->name('participate');
+        Route::post('/{userContest}/problem/{problem}/status', [UserContestsController::class, 'updateProblemStatus'])->name('update-problem-status');
+        Route::post('/{userContest}/complete', [UserContestsController::class, 'complete'])->name('complete');
+    });
 });
 
 require __DIR__.'/auth.php';

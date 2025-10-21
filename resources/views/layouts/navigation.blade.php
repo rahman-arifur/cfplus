@@ -27,6 +27,9 @@
                     <x-nav-link :href="route('problems.index')" :active="request()->routeIs('problems.index')">
                         {{ __('Problems') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('user-contests.index')" :active="request()->routeIs('user-contests.*')">
+                        {{ __('Custom Contests') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -93,6 +96,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('problems.index')" :active="request()->routeIs('problems.index')">
                 {{ __('Problems') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('user-contests.index')" :active="request()->routeIs('user-contests.*')">
+                {{ __('Custom Contests') }}
             </x-responsive-nav-link>
         </div>
 
