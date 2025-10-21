@@ -173,7 +173,15 @@
             </div>
 
             <!-- Contest Actions -->
-            <div class="mt-8 text-center space-x-4">
+            <div class="mt-8 text-center space-x-4 flex flex-wrap justify-center gap-4">
+                <button id="syncButton" 
+                        type="button"
+                        onclick="syncWithCodeforces()"
+                        style="background-color: #2563eb !important; color: white !important;"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md hover:shadow-lg">
+                    🔄 Sync from Codeforces
+                </button>
+
                 <form action="{{ route('user-contests.complete', $userContest) }}" 
                       method="POST" 
                       class="inline"
@@ -302,6 +310,57 @@
                 });
             });
         });
+
+        // Sync with Codeforces function
+        function syncWithCodeforces() {
+            const syncButton = document.getElementById('syncButton');
+            const originalText = syncButton.textContent;
+            
+            syncButton.disabled = true;
+            syncButton.textContent = '⏳ Syncing...';
+            
+            console.log('Starting sync...');
+            
+            fetch('{{ route("user-contests.sync-status", $userContest) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success response:', data);
+                if (data.success) {
+                    // Show success message with better formatting
+                    syncButton.textContent = '✅ ' + data.message;
+                    syncButton.style.backgroundColor = '#16a34a';
+                    
+                    // Reload after 1 second to show the success state briefly
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to sync'));
+                    syncButton.disabled = false;
+                    syncButton.textContent = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Sync error:', error);
+                const errorMsg = error.message || (typeof error === 'object' && error.message) || 'Failed to sync with Codeforces';
+                alert(errorMsg + '. Please check console for details.');
+                syncButton.disabled = false;
+                syncButton.textContent = originalText;
+            });
+        }
 
         // Auto-save functionality (optional - save progress every 30 seconds)
         setInterval(function() {

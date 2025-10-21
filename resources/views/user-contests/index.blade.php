@@ -113,6 +113,17 @@
                                             <span class="text-gray-500">Progress:</span>
                                             <span class="font-medium">{{ $contest->progress }}%</span>
                                         </div>
+                                        @if($contest->performance_rating)
+                                            <div>
+                                                <span class="text-gray-500">Rating:</span>
+                                                <span class="font-medium text-blue-600">{{ $contest->performance_rating }}</span>
+                                                @if($contest->rating_change)
+                                                    <span class="text-sm {{ $contest->rating_change > 0 ? 'text-green-600' : 'text-red-600' }}">
+                                                        ({{ $contest->rating_change > 0 ? '+' : '' }}{{ $contest->rating_change }})
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                     @if($contest->tags && is_array($contest->tags) && count($contest->tags) > 0)
                                         <div class="flex flex-wrap gap-1 mt-2">
@@ -184,17 +195,9 @@
                 // Get completed contests data from controller
                 const completedContests = @json($completedContests);
 
-                // Calculate performance score (0-100 based on progress and difficulty)
-                const performanceData = completedContests.map(contest => {
-                    // Base score from progress
-                    let score = contest.progress;
-                    
-                    // Bonus for difficulty (higher rating = more bonus)
-                    const difficultyBonus = Math.min(20, (contest.avg_rating - 800) / 100);
-                    score = Math.min(100, score + difficultyBonus);
-                    
-                    return Math.round(score);
-                });
+                // Use actual rating (gradual) for the chart
+                const actualRatingData = completedContests.map(contest => contest.actual_rating || 1500);
+                const performanceData = completedContests.map(contest => contest.performance_rating || 0);
 
                 const labels = completedContests.map(c => c.title);
                 const dates = completedContests.map(c => c.completed_at);
@@ -203,20 +206,37 @@
                     type: 'line',
                     data: {
                         labels: dates,
-                        datasets: [{
-                            label: 'Performance Score',
-                            data: performanceData,
-                            borderColor: 'rgb(59, 130, 246)',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
-                            pointBackgroundColor: 'rgb(59, 130, 246)',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                        }]
+                        datasets: [
+                            {
+                                label: 'Rating',
+                                data: actualRatingData,
+                                borderColor: 'rgb(59, 130, 246)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 6,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: 'rgb(59, 130, 246)',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                            },
+                            {
+                                label: 'Performance',
+                                data: performanceData,
+                                borderColor: 'rgb(168, 85, 247)',
+                                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                fill: false,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: 'rgb(168, 85, 247)',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
@@ -238,12 +258,18 @@
                                 callbacks: {
                                     label: function(context) {
                                         const contest = completedContests[context.dataIndex];
-                                        return [
-                                            `Performance: ${context.parsed.y}/100`,
-                                            `Progress: ${contest.progress}%`,
-                                            `Solved: ${contest.solved}/${contest.total}`,
-                                            `Avg Rating: ${Math.round(contest.avg_rating)}`
-                                        ];
+                                        const datasetLabel = context.dataset.label;
+                                        
+                                        if (datasetLabel === 'Rating') {
+                                            return [
+                                                `Rating: ${contest.actual_rating}`,
+                                                `Change: ${contest.rating_change > 0 ? '+' : ''}${contest.rating_change}`,
+                                                `Performance: ${contest.performance_rating}`,
+                                                `Solved: ${contest.solved}/${contest.total}`
+                                            ];
+                                        } else {
+                                            return `Performance: ${contest.performance_rating}`;
+                                        }
                                     },
                                     title: function(context) {
                                         return completedContests[context[0].dataIndex].title;
@@ -253,15 +279,16 @@
                         },
                         scales: {
                             y: {
-                                beginAtZero: true,
-                                max: 100,
+                                beginAtZero: false,
+                                min: 0,
+                                suggestedMax: 2400,
                                 title: {
                                     display: true,
-                                    text: 'Performance Score'
+                                    text: 'Performance Rating'
                                 },
                                 ticks: {
                                     callback: function(value) {
-                                        return value + '/100';
+                                        return value;
                                     }
                                 }
                             },

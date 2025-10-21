@@ -81,6 +81,26 @@
                             <div class="text-gray-500 text-sm">Progress</div>
                             <div class="text-lg font-medium">{{ $contest->progress }}%</div>
                         </div>
+                        @if($contest->actual_rating)
+                            <div>
+                                <div class="text-gray-500 text-sm">Rating</div>
+                                <div class="text-lg font-medium text-blue-600">{{ $contest->actual_rating }}</div>
+                            </div>
+                        @endif
+                        @if($contest->rating_change)
+                            <div>
+                                <div class="text-gray-500 text-sm">Rating Change</div>
+                                <div class="text-lg font-medium {{ $contest->rating_change > 0 ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ $contest->rating_change > 0 ? '+' : '' }}{{ $contest->rating_change }}
+                                </div>
+                            </div>
+                        @endif
+                        @if($contest->performance_rating)
+                            <div>
+                                <div class="text-gray-500 text-sm">Performance</div>
+                                <div class="text-lg font-medium text-purple-600">{{ $contest->performance_rating }}</div>
+                            </div>
+                        @endif
                         @if($contest->started_at)
                             <div>
                                 <div class="text-gray-500 text-sm">Started</div>

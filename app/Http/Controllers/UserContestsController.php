@@ -9,6 +9,7 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class UserContestsController extends Controller
@@ -25,7 +26,7 @@ class UserContestsController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        // Prepare performance chart data for completed contests
+        // Prepare rating chart data for completed contests
         $completedContests = $user->userContests()
             ->with('problems')
             ->where('status', 'completed')
@@ -36,6 +37,11 @@ class UserContestsController extends Controller
                 $total = $contest->problems->count();
                 $avgRating = $contest->problems->avg('rating') ?? 0;
                 
+                // Calculate statistics if not already set
+                if (!$contest->performance_rating && $solved > 0) {
+                    $contest->updateStatistics();
+                }
+                
                 return [
                     'title' => $contest->title,
                     'completed_at' => $contest->completed_at?->format('M d'),
@@ -43,6 +49,10 @@ class UserContestsController extends Controller
                     'avg_rating' => round($avgRating),
                     'solved' => $solved,
                     'total' => $total,
+                    'performance_rating' => $contest->performance_rating ?? 0,
+                    'actual_rating' => $contest->actual_rating ?? 1500,
+                    'rating_change' => $contest->rating_change ?? 0,
+                    'total_score' => $contest->total_score ?? 0,
                 ];
             });
 
@@ -162,7 +172,7 @@ class UserContestsController extends Controller
             abort(403);
         }
 
-        // Check if contest is draft - redirect to show page instead
+                // Check if contest is draft - redirect to show page instead
         if ($userContest->isDraft()) {
             return redirect()->route('user-contests.show', $userContest)
                 ->with('info', 'Contest is still in draft mode. Start it to begin participating.');
@@ -248,6 +258,150 @@ class UserContestsController extends Controller
     }
 
     /**
+     * Sync problem statuses from Codeforces submissions.
+     */
+    public function syncStatus(Request $request, UserContest $userContest): RedirectResponse|JsonResponse
+    {
+        // Check user owns this contest
+        if ($userContest->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        if (!$userContest->isActive()) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Contest is not active.'], 400);
+            }
+            return back()->withErrors(['general' => 'Contest is not active.']);
+        }
+
+        $user = $request->user();
+        $cfAccount = $user->cfAccount;
+
+        if (!$cfAccount) {
+            Log::warning('Sync attempted without CF account', ['user_id' => $user->id]);
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Please link your Codeforces account first from the dashboard.'
+                ], 400);
+            }
+            return back()->withErrors(['general' => 'Please link your Codeforces account first from the dashboard.']);
+        }
+
+        Log::info('Starting CF sync', [
+            'user_id' => $user->id,
+            'handle' => $cfAccount->handle,
+            'contest_id' => $userContest->id
+        ]);
+
+        try {
+            // Get user submissions from Codeforces API with timeout
+            $response = Http::timeout(10)->get("https://codeforces.com/api/user.status", [
+                'handle' => $cfAccount->handle,
+                'from' => 1,
+                'count' => 100, // Get last 100 submissions
+            ]);
+
+            if ($response->failed()) {
+                Log::error('CF API request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                throw new \Exception('Codeforces API request failed: ' . $response->status());
+            }
+
+            $data = $response->json();
+            
+            if (!isset($data['status']) || $data['status'] !== 'OK') {
+                Log::error('CF API returned error', ['data' => $data]);
+                $errorMessage = $data['comment'] ?? 'Unknown error';
+                throw new \Exception('Codeforces API error: ' . $errorMessage);
+            }
+
+            $submissions = $data['result'] ?? [];
+            $contestStartTime = $userContest->started_at;
+            $updatedCount = 0;
+
+            // Check each problem in the contest
+            foreach ($userContest->problems as $problem) {
+                $problemCode = $problem->code;
+                
+                // Find if user has solved this problem after contest started
+                $solved = collect($submissions)->first(function ($submission) use ($problemCode, $contestStartTime) {
+                    $problemMatch = isset($submission['problem']) && 
+                                  ($submission['problem']['contestId'] . $submission['problem']['index']) === $problemCode;
+                    
+                    $isAccepted = isset($submission['verdict']) && $submission['verdict'] === 'OK';
+                    
+                    $afterStart = $contestStartTime ? 
+                        $submission['creationTimeSeconds'] >= $contestStartTime->timestamp : true;
+                    
+                    return $problemMatch && $isAccepted && $afterStart;
+                });
+
+                if ($solved) {
+                    // Update as solved if not already marked
+                    $pivot = $userContest->problems()
+                        ->where('problems.id', $problem->id)
+                        ->first()
+                        ->pivot;
+
+                    if (!$pivot->solved_during_contest) {
+                        $userContest->problems()->updateExistingPivot($problem->id, [
+                            'solved_during_contest' => true,
+                            'solved_at' => now(),
+                        ]);
+                        $updatedCount++;
+                    }
+                }
+            }
+
+            $message = $updatedCount > 0 
+                ? "Successfully synced! {$updatedCount} problem(s) marked as solved."
+                : "Already up to date. No new solves found.";
+
+            Log::info('CF Sync completed', [
+                'contest_id' => $userContest->id,
+                'updated_count' => $updatedCount,
+                'total_submissions_checked' => count($submissions)
+            ]);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'updated_count' => $updatedCount,
+                ]);
+            }
+
+            return back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            Log::error('CF Sync Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => $user->id,
+                'contest_id' => $userContest->id
+            ]);
+            
+            $userMessage = 'Failed to sync with Codeforces. ';
+            if (str_contains($e->getMessage(), 'timeout') || str_contains($e->getMessage(), 'Timeout')) {
+                $userMessage .= 'The request timed out. CF API might be slow.';
+            } elseif (str_contains($e->getMessage(), 'handle')) {
+                $userMessage .= 'Invalid CF handle or user not found.';
+            } else {
+                $userMessage .= 'Please try again later.';
+            }
+            
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $userMessage], 500);
+            }
+            
+            return back()->withErrors(['general' => $userMessage]);
+        }
+    }
+
+    /**
      * Complete the contest manually.
      */
     public function complete(Request $request, UserContest $userContest): RedirectResponse
@@ -262,9 +416,12 @@ class UserContestsController extends Controller
         }
 
         $userContest->complete();
+        
+        // Calculate and update statistics
+        $userContest->updateStatistics();
 
         return redirect()->route('user-contests.show', $userContest)
-            ->with('success', 'Contest completed!');
+            ->with('success', 'Contest completed! Your performance rating: ' . $userContest->performance_rating);
     }
 
     /**

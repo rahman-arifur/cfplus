@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{userContest}/start', [UserContestsController::class, 'start'])->name('start');
         Route::get('/{userContest}/participate', [UserContestsController::class, 'participate'])->name('participate');
         Route::post('/{userContest}/problem/{problem}/status', [UserContestsController::class, 'updateProblemStatus'])->name('update-problem-status');
+        Route::post('/{userContest}/sync-status', [UserContestsController::class, 'syncStatus'])->name('sync-status');
         Route::post('/{userContest}/complete', [UserContestsController::class, 'complete'])->name('complete');
     });
 });
