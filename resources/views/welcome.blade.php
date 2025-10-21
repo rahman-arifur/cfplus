@@ -3,14 +3,16 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ config('app.name', 'cfplus') }}</title>
+    <title>CFPlus - Competitive Programming Training Platform</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased bg-white text-slate-800">
     <div class="min-h-screen flex flex-col">
         <nav class="bg-white border-b"> 
             <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                <a href="{{ url('/') }}" class="text-xl font-semibold">{{ config('app.name', 'cfplus') }}</a>
+                <a href="{{ url('/') }}" class="text-xl font-semibold">
+                    <span class="text-blue-600">CF</span><span class="text-purple-600">Plus</span>
+                </a>
                 <div class="space-x-3">
                     @auth
                         <a href="{{ route('profile.show') }}" class="text-sm text-slate-600 hover:text-slate-900">Dashboard</a>
@@ -28,7 +30,9 @@
 
         <header class="bg-gradient-to-r from-slate-50 to-white py-20">
             <div class="max-w-5xl mx-auto px-4 text-center">
-                <h1 class="text-4xl font-extrabold mb-4">{{ config('app.name', 'cfplus') }}</h1>
+                <h1 class="text-5xl font-extrabold mb-4">
+                    <span class="text-blue-600">CF</span><span class="text-purple-600">Plus</span>
+                </h1>
                 <p class="text-lg text-slate-600 mb-6">
                     A minimal Codeforces companion — track handles, rating history, contests and problems in one clean place.
                 </p>
