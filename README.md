@@ -8,21 +8,6 @@
   <img src="https://img.shields.io/badge/Chart.js-4.4-ff6384?style=for-the-badge&logo=chart.js" alt="ChartJS">
 </p>
 
-## Table of Contents
-- [About](#about)
-- [Features](#features)
-- [Screenshots](#screenshots)
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Application](#running-the-application)
-- [Usage Guide](#usage-guide)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
-
----
 
 ## About
 
@@ -535,32 +520,3 @@ php artisan queue:retry all
 php artisan tinker
 DB::connection()->getPdo();
 ```
-
----
-
-## Author
-
-**Arifur Rahman**
-- GitHub: [@rahman-arifur](https://github.com/rahman-arifur)
-
----
-
-## Acknowledgments
-
-- **Codeforces** for providing the excellent API
-- **Laravel** framework for the robust backend
-- **Tailwind CSS** for the beautiful styling
-- **Chart.js** for data visualization
-- **All contributors** who helped improve this project
-
----
-
-## Support
-
-If you encounter any issues or have questions:
-
-1. Check the [Troubleshooting](#troubleshooting) section
-2. Open an issue on [GitHub](https://github.com/rahman-arifur/cfplus/issues)
-3. Read the comprehensive documentation in `PROJECT_COMPREHENSIVE_DOCUMENTATION.md`
-
----
